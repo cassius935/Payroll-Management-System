@@ -90,7 +90,22 @@ public class main {
             NotificationManager.initialize();
             Thread.sleep(200);
             
-            // Step 4: Launch login frame
+            // Step 4: Initialize withdrawal system
+            splash.updateStatus("Initializing withdrawal system...");
+            WithdrawManager.initializeWithdrawalTable();
+            Thread.sleep(100);
+            
+            // Step 5: Initialize salary approval system
+            splash.updateStatus("Initializing salary approval system...");
+            SalaryApprovalManager.initializeSalaryApprovalTable();
+            Thread.sleep(100);
+            
+            // Step 6: Initialize announcement tracking
+            splash.updateStatus("Initializing announcement system...");
+            AnnouncementManager.initializeAnnouncementTracking();
+            Thread.sleep(100);
+            
+            // Step 7: Launch login frame
             splash.updateStatus("Launching login interface...");
             Thread.sleep(200);
             splash.setVisible(false);

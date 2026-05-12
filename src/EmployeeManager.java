@@ -1,3 +1,5 @@
+package src;
+
 import java.util.HashMap;
 
 // to manage data and prevent data loss

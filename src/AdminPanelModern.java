@@ -45,10 +45,10 @@ public class AdminPanelModern extends JFrame {
 
         tabbedPane.addTab("📊 Dashboard", createDashboardPanel());
         tabbedPane.addTab("👥 Manage Employees", createEmployeeManagementPanel());
-        tabbedPane.addTab("💰 Salary Management", createSalaryManagementPanel());
-        tabbedPane.addTab("� Messages", createMessagesPanel());
-        tabbedPane.addTab("📢 Announcements", createAnnouncementsPanel());
-        tabbedPane.addTab("📱 E-Wallet Integration", createEWalletPanel());
+        tabbedPane.addTab("💰 Salary Approvals", createSalaryApprovalPanel());
+        tabbedPane.addTab("💬 Message Employees", createAdminMessagingPanel());
+        tabbedPane.addTab("📬 Messages (" + messageCount + ")", createMessagesPanel());
+        tabbedPane.addTab("📢 Announcements", createAdminAnnouncementsPanel());
         tabbedPane.addTab("💳 Bills", createBillManagementPanel());
         tabbedPane.addTab("✓ Attendance", createAttendancePanel());
         
@@ -66,8 +66,8 @@ public class AdminPanelModern extends JFrame {
     private void updateMessageCount() {
         try {
             messageCount = MessageManager.getUnreadCount(adminUser.id);
-            if (tabbedPane.getTabCount() > 3) {
-                tabbedPane.setTitleAt(3, "📬 Messages (" + messageCount + ")");
+            if (tabbedPane.getTabCount() > 4) {
+                tabbedPane.setTitleAt(4, "📬 Messages (" + messageCount + ")");
             }
             if (notificationBadgeLabel != null) {
                 if (messageCount > 0) {
@@ -322,9 +322,102 @@ public class AdminPanelModern extends JFrame {
     }
 
     /**
-     * Create salary management panel
+     * Create salary approval panel - Admin approves before paying
      */
-    private JScrollPane createSalaryManagementPanel() {
+    private JScrollPane createSalaryApprovalPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(UITheme.BG_LIGHT);
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel titleLabel = new JLabel("💰 Salary Approvals");
+        titleLabel.setFont(UITheme.FONT_TITLE);
+        titleLabel.setForeground(UITheme.TEXT_PRIMARY);
+        panel.add(titleLabel, BorderLayout.NORTH);
+
+        // Pending salaries table
+        JPanel pendingPanel = new JPanel(new BorderLayout());
+        pendingPanel.setBorder(BorderFactory.createTitledBorder("Pending Salary Approvals"));
+        pendingPanel.setBackground(UITheme.BG_LIGHT);
+
+        java.util.List<SalaryApprovalManager.SalaryApprovalInfo> pendingSalaries = 
+            SalaryApprovalManager.getPendingSalaries();
+
+        String[] columns = {"Employee", "Amount", "Date Submitted", "Reason", "Action"};
+        Object[][] data = new Object[pendingSalaries.size()][5];
+        for (int i = 0; i < pendingSalaries.size(); i++) {
+            SalaryApprovalManager.SalaryApprovalInfo salary = pendingSalaries.get(i);
+            data[i][0] = salary.employeeName;
+            data[i][1] = "PHP " + String.format("%.2f", salary.salaryAmount);
+            data[i][2] = salary.createdAt.toLocalDate();
+            data[i][3] = salary.reason;
+            data[i][4] = "Approve/Reject";
+        }
+
+        JTable salaryTable = new JTable(data, columns);
+        salaryTable.setFont(UITheme.FONT_REGULAR);
+        salaryTable.setRowHeight(30);
+        salaryTable.setBackground(UITheme.BG_WHITE);
+
+        // Add action listeners for approve/reject
+        salaryTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int row = salaryTable.rowAtPoint(e.getPoint());
+                int col = salaryTable.columnAtPoint(e.getPoint());
+                
+                if (col == 4 && row >= 0 && row < pendingSalaries.size()) {
+                    SalaryApprovalManager.SalaryApprovalInfo salary = pendingSalaries.get(row);
+                    
+                    Object[] options = {"Approve", "Reject", "Cancel"};
+                    int choice = JOptionPane.showOptionDialog(null,
+                        "Employee: " + salary.employeeName + "\n" +
+                        "Amount: PHP " + String.format("%.2f", salary.salaryAmount) + "\n\n" +
+                        "What would you like to do?",
+                        "Salary Approval Decision",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        options,
+                        options[0]);
+                    
+                    if (choice == 0) { // Approve
+                        if (SalaryApprovalManager.approveSalary(salary.approvalId, adminUser.id)) {
+                            JOptionPane.showMessageDialog(null,
+                                "✓ Salary approved for " + salary.employeeName + "\n" +
+                                "Amount: PHP " + String.format("%.2f", salary.salaryAmount),
+                                "Approval Successful",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    } else if (choice == 1) { // Reject
+                        String reason = JOptionPane.showInputDialog(null, "Reason for rejection:", "Reason");
+                        if (reason != null) {
+                            if (SalaryApprovalManager.rejectSalary(salary.approvalId, adminUser.id, reason)) {
+                                JOptionPane.showMessageDialog(null,
+                                    "✓ Salary rejected for " + salary.employeeName,
+                                    "Rejection Successful",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(salaryTable);
+        pendingPanel.add(scrollPane, BorderLayout.CENTER);
+
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.add(pendingPanel, BorderLayout.CENTER);
+
+        panel.add(centerPanel, BorderLayout.CENTER);
+        
+        return new JScrollPane(panel);
+    }
+
+    /**
+     * Create admin messaging panel - Send individual messages to employees
+     */
+    private JScrollPane createAdminMessagingPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(UITheme.BG_LIGHT);
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -334,87 +427,219 @@ public class AdminPanelModern extends JFrame {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
-        JLabel titleLabel = new JLabel("💰 Salary Management");
+        JLabel titleLabel = new JLabel("💬 Send Message to Employee");
         titleLabel.setFont(UITheme.FONT_TITLE);
         titleLabel.setForeground(UITheme.TEXT_PRIMARY);
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.gridwidth = 3;
+        gbc.gridwidth = 2;
         panel.add(titleLabel, gbc);
 
-        // Employee selection
+        // Select employee
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         panel.add(new JLabel("Select Employee:"), gbc);
-        JComboBox<String> employeeCombo = new JComboBox<>(getEmployeeNames());
+        
+        java.util.List<DBConnection.EmployeeInfo> employees = getEmployeeList();
+        String[] employeeNames = new String[employees.size()];
+        for (int i = 0; i < employees.size(); i++) {
+            employeeNames[i] = employees.get(i).fullName + " (" + employees.get(i).employeeId + ")";
+        }
+        
+        JComboBox<String> employeeCombo = new JComboBox<>(employeeNames);
         gbc.gridx = 1;
-        gbc.gridwidth = 2;
         panel.add(employeeCombo, gbc);
 
-        // Salary amount
+        // Message subject
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 1;
-        panel.add(new JLabel("Salary Amount (PHP):"), gbc);
-        JTextField salaryField = UITheme.createModernTextField(20);
+        panel.add(new JLabel("Subject:"), gbc);
+        
+        JTextField subjectField = UITheme.createModernTextField(30);
         gbc.gridx = 1;
-        gbc.gridwidth = 2;
-        panel.add(salaryField, gbc);
+        panel.add(subjectField, gbc);
 
-        // Absences
+        // Message content
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 1;
-        panel.add(new JLabel("Absences (days):"), gbc);
-        JSpinner absenceSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 30, 1));
+        panel.add(new JLabel("Message:"), gbc);
+        
+        JTextArea messageArea = new JTextArea(8, 40);
+        messageArea.setLineWrap(true);
+        messageArea.setWrapStyleWord(true);
+        messageArea.setFont(UITheme.FONT_REGULAR);
+        
+        JScrollPane messageScroll = new JScrollPane(messageArea);
         gbc.gridx = 1;
-        gbc.gridwidth = 2;
-        panel.add(absenceSpinner, gbc);
+        gbc.gridy = 3;
+        gbc.gridwidth = 1;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        panel.add(messageScroll, gbc);
 
-        // Deduction amount
+        // Message type
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 1;
-        panel.add(new JLabel("Deduction per Absence (PHP):"), gbc);
-        JTextField deductionField = UITheme.createModernTextField(20);
-        deductionField.setText("500.00");
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(new JLabel("Message Type:"), gbc);
+        
+        String[] types = {"General", "Salary", "Announcement", "Urgent"};
+        JComboBox<String> typeCombo = new JComboBox<>(types);
         gbc.gridx = 1;
-        gbc.gridwidth = 2;
-        panel.add(deductionField, gbc);
+        panel.add(typeCombo, gbc);
 
-        // Net salary display
+        // Send button
         gbc.gridx = 0;
         gbc.gridy = 5;
-        gbc.gridwidth = 1;
-        panel.add(new JLabel("Net Salary:"), gbc);
-        JLabel netSalaryLabel = new JLabel("PHP 0.00");
-        netSalaryLabel.setFont(UITheme.FONT_HEADING);
-        netSalaryLabel.setForeground(UITheme.SUCCESS_GREEN);
-        gbc.gridx = 1;
         gbc.gridwidth = 2;
-        panel.add(netSalaryLabel, gbc);
+        JButton sendBtn = UITheme.createSuccessButton("✓ Send Message");
+        sendBtn.addActionListener(e -> {
+            String selectedEmployee = (String) employeeCombo.getSelectedItem();
+            String subject = subjectField.getText().trim();
+            String message = messageArea.getText().trim();
+            String type = (String) typeCombo.getSelectedItem();
 
-        // Release salary button
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        gbc.gridwidth = 3;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        JButton releaseBtn = UITheme.createModernButton("💳 Release Salary", UITheme.SUCCESS_GREEN);
-        releaseBtn.setPreferredSize(new Dimension(Integer.MAX_VALUE, 45));
-        releaseBtn.addActionListener(e -> {
-            String employee = (String) employeeCombo.getSelectedItem();
-            String salaryText = salaryField.getText();
-            int absences = (Integer) absenceSpinner.getValue();
-            try {
-                double salary = Double.parseDouble(salaryText);
-                releaseSalary(employee, salary, absences);
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(panel, "Please enter valid salary amount");
+            if (subject.isEmpty() || message.isEmpty()) {
+                JOptionPane.showMessageDialog(panel,
+                    "Please enter both subject and message",
+                    "Missing Information",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Send message (in real implementation, this would save to database)
+            int employeeIndex = employeeCombo.getSelectedIndex();
+            if (employeeIndex >= 0 && employeeIndex < employees.size()) {
+                DBConnection.EmployeeInfo emp = employees.get(employeeIndex);
+                MessageManager.sendMessage(adminUser.id, emp.userId, subject, message, type);
+                
+                JOptionPane.showMessageDialog(panel,
+                    "✓ Message sent successfully to " + emp.fullName,
+                    "Message Sent",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+                subjectField.setText("");
+                messageArea.setText("");
             }
         });
-        panel.add(releaseBtn, gbc);
+        panel.add(sendBtn, gbc);
 
         panel.add(Box.createVerticalGlue());
+        return new JScrollPane(panel);
+    }
+
+    /**
+     * Create admin announcements panel with new announcement posting
+     */
+    private JScrollPane createAdminAnnouncementsPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(UITheme.BG_LIGHT);
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Post new announcement section
+        JPanel postPanel = new JPanel(new GridBagLayout());
+        postPanel.setBorder(BorderFactory.createTitledBorder("📢 Post New Announcement"));
+        postPanel.setBackground(UITheme.BG_LIGHT);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        JLabel titleLabel = new JLabel("Title:");
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        postPanel.add(titleLabel, gbc);
+
+        JTextField titleField = UITheme.createModernTextField(40);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        postPanel.add(titleField, gbc);
+
+        JLabel msgLabel = new JLabel("Message:");
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        postPanel.add(msgLabel, gbc);
+
+        JTextArea messageArea = new JTextArea(5, 40);
+        messageArea.setLineWrap(true);
+        messageArea.setWrapStyleWord(true);
+        messageArea.setFont(UITheme.FONT_REGULAR);
+        
+        JScrollPane messageScroll = new JScrollPane(messageArea);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        postPanel.add(messageScroll, gbc);
+
+        JButton postBtn = UITheme.createSuccessButton("✓ Post Announcement to All Employees");
+        postBtn.addActionListener(e -> {
+            String title = titleField.getText().trim();
+            String message = messageArea.getText().trim();
+
+            if (title.isEmpty() || message.isEmpty()) {
+                JOptionPane.showMessageDialog(postPanel,
+                    "Please enter both title and message",
+                    "Missing Information",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            if (AnnouncementManager.postAnnouncement(adminUser.id, title, message)) {
+                JOptionPane.showMessageDialog(postPanel,
+                    "✓ Announcement posted successfully to all employees!\n\n" +
+                    "Title: " + title,
+                    "Announcement Posted",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+                titleField.setText("");
+                messageArea.setText("");
+            }
+        });
+        
+        gbc.gridy = 2;
+        gbc.gridwidth = 3;
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        postPanel.add(postBtn, gbc);
+
+        // Announcements history
+        JPanel historyPanel = new JPanel(new BorderLayout());
+        historyPanel.setBorder(BorderFactory.createTitledBorder("Recent Announcements"));
+        historyPanel.setBackground(UITheme.BG_LIGHT);
+
+        java.util.List<AnnouncementManager.AnnouncementInfo> announcements = 
+            AnnouncementManager.getAllAnnouncements();
+
+        String[] columns = {"Title", "Message", "Posted By", "Date"};
+        Object[][] data = new Object[announcements.size()][4];
+        for (int i = 0; i < announcements.size(); i++) {
+            AnnouncementManager.AnnouncementInfo announcement = announcements.get(i);
+            data[i][0] = announcement.title;
+            data[i][1] = announcement.message.length() > 50 ? 
+                announcement.message.substring(0, 50) + "..." : announcement.message;
+            data[i][2] = announcement.announcedBy;
+            data[i][3] = announcement.createdAt.toLocalDateTime().toLocalDate();
+        }
+
+        JTable announcementTable = new JTable(data, columns);
+        announcementTable.setFont(UITheme.FONT_REGULAR);
+        announcementTable.setRowHeight(25);
+        announcementTable.setBackground(UITheme.BG_WHITE);
+
+        JScrollPane historyScroll = new JScrollPane(announcementTable);
+        historyPanel.add(historyScroll, BorderLayout.CENTER);
+
+        panel.add(postPanel, BorderLayout.NORTH);
+        panel.add(historyPanel, BorderLayout.CENTER);
+
         return new JScrollPane(panel);
     }
 
@@ -746,6 +971,38 @@ public class AdminPanelModern extends JFrame {
             {"EMP-004", "Pedro Garcia", "Accountant", "Finance", "✓ Active", "View"},
             {"EMP-005", "Rosa Reyes", "Operations Coordinator", "Operations", "✓ Active", "View"}
         };
+    }
+
+    /**
+     * Get employee list from database
+     */
+    private java.util.List<DBConnection.EmployeeInfo> getEmployeeList() {
+        java.util.List<DBConnection.EmployeeInfo> employees = new java.util.ArrayList<>();
+        try {
+            Connection con = DBConnection.getConnection();
+            if (con != null) {
+                String query = "SELECT u.id, u.first_name, u.last_name, e.employee_id, e.balance " +
+                              "FROM users u JOIN employee e ON u.id = e.user_id WHERE u.user_type = 'WORKER'";
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery(query);
+                
+                while (rs.next()) {
+                    DBConnection.EmployeeInfo info = new DBConnection.EmployeeInfo();
+                    info.userId = rs.getInt("id");
+                    info.fullName = rs.getString("first_name") + " " + rs.getString("last_name");
+                    info.employeeId = rs.getString("employee_id");
+                    info.balance = rs.getDouble("balance");
+                    employees.add(info);
+                }
+                
+                rs.close();
+                stmt.close();
+                con.close();
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting employee list: " + e.getMessage());
+        }
+        return employees;
     }
 
     /**

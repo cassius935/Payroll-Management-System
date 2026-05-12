@@ -52,11 +52,12 @@ public class WorkerPanelModern extends JFrame {
 
         tabbedPane.addTab("🏠 Home", createHomePanel());
         tabbedPane.addTab("💰 Wallet & Balance", createWalletPanel());
-        tabbedPane.addTab("� Messages (" + messageCount + ")", createMessagesPanel());
+        tabbedPane.addTab("💸 Withdraw Money", createWithdrawPanel());
+        tabbedPane.addTab("📬 Messages (" + messageCount + ")", createMessagesPanel());
         tabbedPane.addTab("💳 Bills", createBillPaymentPanel());
         tabbedPane.addTab("📱 E-Wallet", createEWalletPanel());
         tabbedPane.addTab("👤 Profile", createProfilePanel());
-        tabbedPane.addTab("📢 Announcements", createAnnouncementsPanel());
+        tabbedPane.addTab("📢 Announcements 🔴", createAnnouncementsPanel());
         
         // Update notification counts from database
         updateNotificationCounts();
@@ -506,6 +507,298 @@ public class WorkerPanelModern extends JFrame {
 
         panel.add(Box.createVerticalGlue());
         return new JScrollPane(panel);
+    }
+
+    /**
+     * Create withdraw panel
+     */
+    private JScrollPane createWithdrawPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(UITheme.BG_LIGHT);
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        // Title
+        JLabel titleLabel = new JLabel("💸 Withdraw Money");
+        titleLabel.setFont(UITheme.FONT_TITLE);
+        titleLabel.setForeground(UITheme.TEXT_PRIMARY);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        panel.add(titleLabel, gbc);
+
+        // Current Balance Display
+        JPanel balanceCard = UITheme.createCardPanel();
+        balanceCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        double currentBalance = employeeInfo != null ? employeeInfo.balance : 0.0;
+        JLabel balanceLabel = new JLabel("Available Balance: PHP " + String.format("%,.2f", currentBalance));
+        balanceLabel.setFont(UITheme.FONT_BOLD);
+        balanceLabel.setForeground(UITheme.SUCCESS_GREEN);
+        balanceCard.add(balanceLabel);
+        gbc.gridy = 1;
+        gbc.gridwidth = 2;
+        panel.add(balanceCard, gbc);
+
+        // Withdraw amount
+        gbc.gridy = 2;
+        gbc.gridwidth = 1;
+        gbc.gridx = 0;
+        JLabel amountLabel = new JLabel("Withdrawal Amount (PHP):");
+        panel.add(amountLabel, gbc);
+        
+        JTextField amountField = UITheme.createModernTextField(20);
+        gbc.gridx = 1;
+        panel.add(amountField, gbc);
+
+        // Amount presets
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 2;
+        JLabel presetsLabel = new JLabel("Quick Select:");
+        presetsLabel.setFont(UITheme.FONT_SMALL);
+        presetsLabel.setForeground(UITheme.TEXT_SECONDARY);
+        panel.add(presetsLabel, gbc);
+
+        gbc.gridy = 4;
+        JPanel presetsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        presetsPanel.setOpaque(false);
+        
+        for (String preset : new String[]{"500", "1000", "2000", "5000", "10000"}) {
+            JButton presetBtn = new JButton("PHP " + preset);
+            presetBtn.setFont(UITheme.FONT_SMALL);
+            presetBtn.setBackground(UITheme.PRIMARY_BLUE);
+            presetBtn.setForeground(Color.WHITE);
+            presetBtn.setFocusPainted(false);
+            presetBtn.setBorder(BorderFactory.createRaisedBevelBorder());
+            String finalAmount = preset;
+            presetBtn.addActionListener(e -> amountField.setText(finalAmount));
+            presetsPanel.add(presetBtn);
+        }
+        panel.add(presetsPanel, gbc);
+
+        // Information card
+        gbc.gridy = 5;
+        gbc.gridwidth = 2;
+        JPanel infoCard = UITheme.createCardPanel();
+        infoCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        infoCard.setLayout(new BoxLayout(infoCard, BoxLayout.Y_AXIS));
+        
+        JLabel infoTitle = new JLabel("ℹ️ Withdrawal Information");
+        infoTitle.setFont(UITheme.FONT_BOLD);
+        infoTitle.setForeground(UITheme.TEXT_PRIMARY);
+        
+        JLabel infoText1 = new JLabel("• Withdrawal is processed immediately");
+        infoText1.setFont(UITheme.FONT_SMALL);
+        infoText1.setForeground(UITheme.TEXT_SECONDARY);
+        
+        JLabel infoText2 = new JLabel("• You will receive a receipt with transaction details");
+        infoText2.setFont(UITheme.FONT_SMALL);
+        infoText2.setForeground(UITheme.TEXT_SECONDARY);
+        
+        JLabel infoText3 = new JLabel("• Receipt contains: Name, Amount, Balance, and Date");
+        infoText3.setFont(UITheme.FONT_SMALL);
+        infoText3.setForeground(UITheme.TEXT_SECONDARY);
+        
+        infoCard.add(infoTitle);
+        infoCard.add(Box.createVerticalStrut(5));
+        infoCard.add(infoText1);
+        infoCard.add(infoText2);
+        infoCard.add(infoText3);
+        
+        panel.add(infoCard, gbc);
+
+        // Withdraw button
+        gbc.gridy = 6;
+        gbc.gridwidth = 2;
+        JButton withdrawBtn = UITheme.createModernButton("✓ Process Withdrawal", UITheme.SUCCESS_GREEN);
+        withdrawBtn.setPreferredSize(new Dimension(Integer.MAX_VALUE, 45));
+        withdrawBtn.addActionListener(e -> processWithdrawal(amountField));
+        panel.add(withdrawBtn, gbc);
+
+        // Withdrawal history
+        gbc.gridy = 7;
+        gbc.gridwidth = 2;
+        JLabel historyLabel = new JLabel("Recent Withdrawals");
+        historyLabel.setFont(UITheme.FONT_SUBHEADING);
+        panel.add(historyLabel, gbc);
+
+        gbc.gridy = 8;
+        String[] columns = {"Date", "Amount", "Balance After", "Receipt #", "Status"};
+        java.util.List<WithdrawManager.WithdrawalInfo> withdrawals = WithdrawManager.getWithdrawalHistory(workerUser.id, 10);
+        
+        Object[][] data = new Object[withdrawals.size()][5];
+        for (int i = 0; i < withdrawals.size(); i++) {
+            WithdrawManager.WithdrawalInfo w = withdrawals.get(i);
+            data[i][0] = w.withdrawalDate.toLocalDate();
+            data[i][1] = "PHP " + String.format("%.2f", w.withdrawAmount);
+            data[i][2] = "PHP " + String.format("%.2f", w.balanceAfter);
+            data[i][3] = w.receiptNumber;
+            data[i][4] = w.status;
+        }
+
+        JTable historyTable = new JTable(data, columns);
+        historyTable.setFont(UITheme.FONT_SMALL);
+        historyTable.setRowHeight(25);
+        historyTable.setBackground(UITheme.BG_WHITE);
+        historyTable.setGridColor(UITheme.BORDER_GRAY);
+
+        JScrollPane historyScroll = new JScrollPane(historyTable);
+        historyScroll.setPreferredSize(new Dimension(Integer.MAX_VALUE, 150));
+        panel.add(historyScroll, gbc);
+
+        panel.add(Box.createVerticalGlue());
+        return new JScrollPane(panel);
+    }
+
+    /**
+     * Process withdrawal request
+     */
+    private void processWithdrawal(JTextField amountField) {
+        String amountText = amountField.getText().trim();
+        
+        if (amountText.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Please enter a withdrawal amount",
+                "Missing Amount",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            double withdrawAmount = Double.parseDouble(amountText);
+            
+            if (withdrawAmount <= 0) {
+                JOptionPane.showMessageDialog(this,
+                    "Please enter a valid amount greater than 0",
+                    "Invalid Amount",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            double currentBalance = employeeInfo != null ? employeeInfo.balance : 0.0;
+            if (withdrawAmount > currentBalance) {
+                JOptionPane.showMessageDialog(this,
+                    "Insufficient balance!\n\nAvailable: PHP " + String.format("%.2f", currentBalance) + "\nRequested: PHP " + String.format("%.2f", withdrawAmount),
+                    "Insufficient Balance",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Confirm withdrawal
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to withdraw PHP " + String.format("%.2f", withdrawAmount) + "?\n\n" +
+                "Current Balance: PHP " + String.format("%.2f", currentBalance) + "\n" +
+                "Balance After: PHP " + String.format("%.2f", currentBalance - withdrawAmount),
+                "Confirm Withdrawal",
+                JOptionPane.YES_NO_OPTION);
+
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
+
+            // Process withdrawal
+            WithdrawManager.WithdrawalInfo withdrawal = WithdrawManager.processWithdrawal(workerUser.id, withdrawAmount);
+            
+            if (withdrawal != null) {
+                // Generate and show receipt
+                String receipt = ReceiptGenerator.generateReceipt(
+                    workerUser.getFullName(),
+                    getEmployeeIdFromUserId(workerUser.id),
+                    withdrawal.withdrawAmount,
+                    withdrawal.balanceAfter,
+                    withdrawal.receiptNumber,
+                    withdrawal.withdrawalDate
+                );
+
+                // Save receipt to file
+                ReceiptGenerator.saveReceiptToFile(
+                    workerUser.getFullName(),
+                    getEmployeeIdFromUserId(workerUser.id),
+                    withdrawal.withdrawAmount,
+                    withdrawal.balanceAfter,
+                    withdrawal.receiptNumber,
+                    withdrawal.withdrawalDate
+                );
+
+                // Show receipt dialog
+                JFrame receiptFrame = new JFrame("Withdrawal Receipt");
+                receiptFrame.setSize(600, 700);
+                receiptFrame.setLocationRelativeTo(this);
+                receiptFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+                JTextArea receiptArea = new JTextArea(receipt);
+                receiptArea.setFont(new Font("Monospaced", Font.PLAIN, 11));
+                receiptArea.setEditable(false);
+                receiptArea.setBackground(new Color(245, 245, 245));
+                receiptArea.setForeground(Color.BLACK);
+                receiptArea.setMargin(new Insets(15, 15, 15, 15));
+
+                JScrollPane scrollPane = new JScrollPane(receiptArea);
+                
+                JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+                buttonPanel.setBackground(UITheme.BG_LIGHT);
+                
+                JButton printBtn = UITheme.createModernButton("🖨️ Print Receipt", UITheme.PRIMARY_BLUE);
+                printBtn.addActionListener(e -> {
+                    try {
+                        receiptArea.print();
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(receiptFrame, "Print error: " + ex.getMessage());
+                    }
+                });
+                
+                JButton saveBtn = UITheme.createModernButton("💾 Save as Text", UITheme.SECONDARY_TEAL);
+                saveBtn.addActionListener(e -> {
+                    JOptionPane.showMessageDialog(receiptFrame,
+                        "Receipt has been saved as: " + withdrawal.receiptNumber + ".txt\n" +
+                        "Location: receipts/ folder",
+                        "Receipt Saved",
+                        JOptionPane.INFORMATION_MESSAGE);
+                });
+                
+                JButton closeBtn = UITheme.createModernButton("Close", UITheme.DANGER_RED);
+                closeBtn.addActionListener(e -> receiptFrame.dispose());
+                
+                buttonPanel.add(printBtn);
+                buttonPanel.add(saveBtn);
+                buttonPanel.add(closeBtn);
+
+                receiptFrame.add(scrollPane, BorderLayout.CENTER);
+                receiptFrame.add(buttonPanel, BorderLayout.SOUTH);
+                receiptFrame.setVisible(true);
+
+                // Clear the input field and show success message
+                amountField.setText("");
+                JOptionPane.showMessageDialog(this,
+                    "✓ Withdrawal successful!\n\n" +
+                    "Amount: PHP " + String.format("%.2f", withdrawal.withdrawAmount) + "\n" +
+                    "Balance Remaining: PHP " + String.format("%.2f", withdrawal.balanceAfter) + "\n" +
+                    "Receipt #: " + withdrawal.receiptNumber + "\n\n" +
+                    "A receipt has been generated and saved.",
+                    "Withdrawal Successful",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+                // Refresh the employee info to update balance
+                String employeeId = getEmployeeIdFromUserId(workerUser.id);
+                if (employeeId != null) {
+                    employeeInfo = DBConnection.getEmployeeInfo(employeeId);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Error processing withdrawal. Please try again.",
+                    "Withdrawal Failed",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this,
+                "Please enter a valid number",
+                "Invalid Input",
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /**

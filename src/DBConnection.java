@@ -566,6 +566,8 @@ public class DBConnection {
      * Inner class to store employee information
      */
     public static class EmployeeInfo {
+        public int userId;
+        public String fullName;
         public String employeeId;
         public String department;
         public String position;
