@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "main",
+            "request": "launch",
+            "mainClass": "src.main",
+            "projectName": "Payroll Management System_1f518c78"
+        },
+        {
+            "type": "java",
             "name": "DBTest",
             "request": "launch",
             "mainClass": "DBTest",

@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
 import java.util.*;
+import java.util.List;
 
 /**
  * WorkerPanelModern.java
@@ -30,7 +31,7 @@ public class WorkerPanelModern extends JFrame {
         }
 
         // Frame setup
-        setTitle("Payroll System - Worker Dashboard");
+        setTitle("Mihoyo - Worker Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1100, 700);
         setLocationRelativeTo(null);
@@ -51,10 +52,11 @@ public class WorkerPanelModern extends JFrame {
 
         tabbedPane.addTab("🏠 Home", createHomePanel());
         tabbedPane.addTab("💰 Wallet & Balance", createWalletPanel());
-        tabbedPane.addTab("📬 Messages (" + messageCount + ")", createMessagesPanel());
-        tabbedPane.addTab("💳 Pay Bills", createBillPaymentPanel());
+        tabbedPane.addTab("� Messages (" + messageCount + ")", createMessagesPanel());
+        tabbedPane.addTab("💳 Bills", createBillPaymentPanel());
         tabbedPane.addTab("📱 E-Wallet", createEWalletPanel());
         tabbedPane.addTab("👤 Profile", createProfilePanel());
+        tabbedPane.addTab("📢 Announcements", createAnnouncementsPanel());
         
         // Update notification counts from database
         updateNotificationCounts();
@@ -246,12 +248,27 @@ public class WorkerPanelModern extends JFrame {
     }
 
     /**
-     * Create home/dashboard panel
+     * Create home/dashboard panel with BLUE background
      */
     private JScrollPane createHomePanel() {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Blue gradient background
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, UITheme.PRIMARY_BLUE,
+                    getWidth(), getHeight(), new Color(0, 150, 200)
+                );
+                g2.setPaint(gradient);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(UITheme.BG_LIGHT);
+        panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Balance card (Konek2Card style)
@@ -264,7 +281,7 @@ public class WorkerPanelModern extends JFrame {
         // Quick actions
         JLabel quickLabel = new JLabel("Quick Actions");
         quickLabel.setFont(UITheme.FONT_SUBHEADING);
-        quickLabel.setForeground(UITheme.TEXT_PRIMARY);
+        quickLabel.setForeground(Color.WHITE);
         panel.add(quickLabel);
         panel.add(Box.createVerticalStrut(10));
 
@@ -272,54 +289,69 @@ public class WorkerPanelModern extends JFrame {
         actionsPanel.setOpaque(false);
         actionsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
 
-        JButton payBillBtn = createActionButton("💧 Pay Water", UITheme.PRIMARY_BLUE);
-        JButton payElectricBtn = createActionButton("⚡ Pay Electric", UITheme.SECONDARY_TEAL);
+        JButton payBillBtn = createActionButton("💧⚡ Pay Bills", UITheme.PRIMARY_BLUE);
         JButton checkSalaryBtn = createActionButton("💰 Check Salary", UITheme.SUCCESS_GREEN);
-        JButton connectWalletBtn = createActionButton("📱 Connect E-Wallet", UITheme.ACCENT_ORANGE);
+        JButton connectWalletBtn = createActionButton("📱 E-Wallet", UITheme.ACCENT_ORANGE);
         JButton viewSlipsBtn = createActionButton("📄 View Slips", UITheme.WARNING_YELLOW);
         JButton supportBtn = createActionButton("💬 Support", UITheme.DANGER_RED);
+        JButton profileBtn = createActionButton("👤 Profile", UITheme.SECONDARY_TEAL);
 
         payBillBtn.addActionListener(e -> tabbedPane.setSelectedIndex(3));
-        payElectricBtn.addActionListener(e -> tabbedPane.setSelectedIndex(3));
         checkSalaryBtn.addActionListener(e -> tabbedPane.setSelectedIndex(1));
         connectWalletBtn.addActionListener(e -> tabbedPane.setSelectedIndex(4));
         viewSlipsBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "Your salary slips will appear here"));
         supportBtn.addActionListener(e -> tabbedPane.setSelectedIndex(2));
+        profileBtn.addActionListener(e -> tabbedPane.setSelectedIndex(5));
 
         actionsPanel.add(payBillBtn);
-        actionsPanel.add(payElectricBtn);
         actionsPanel.add(checkSalaryBtn);
         actionsPanel.add(connectWalletBtn);
         actionsPanel.add(viewSlipsBtn);
         actionsPanel.add(supportBtn);
+        actionsPanel.add(profileBtn);
 
         panel.add(actionsPanel);
         panel.add(Box.createVerticalStrut(20));
 
-        // Notifications
-        JLabel notifLabel = new JLabel("📢 Notifications");
-        notifLabel.setFont(UITheme.FONT_SUBHEADING);
-        notifLabel.setForeground(UITheme.TEXT_PRIMARY);
-        panel.add(notifLabel);
+        // Announcements section
+        JLabel announcementLabel = new JLabel("📢 Announcements");
+        announcementLabel.setFont(UITheme.FONT_SUBHEADING);
+        announcementLabel.setForeground(Color.WHITE);
+        panel.add(announcementLabel);
         panel.add(Box.createVerticalStrut(10));
-
-        String[] notifications = {
-            "✓ Salary released on May 1, 2024 - PHP 40,000.00",
-            "📌 Please submit your attendance slip by May 5",
-            "💳 Your GCash e-wallet has been verified",
-            "⚠️ Water bill due on May 15 - PHP 850.00",
-            "💬 HR message: Check your salary computation"
-        };
-
-        for (String notif : notifications) {
-            JPanel notifItem = UITheme.createCardPanel();
-            notifItem.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-            JLabel notifLabel2 = new JLabel(notif);
-            notifLabel2.setFont(UITheme.FONT_REGULAR);
-            notifLabel2.setForeground(UITheme.TEXT_SECONDARY);
-            notifItem.add(notifLabel2);
-            panel.add(notifItem);
-            panel.add(Box.createVerticalStrut(5));
+        
+        List<AnnouncementManager.AnnouncementInfo> announcements = AnnouncementManager.getAllAnnouncements();
+        
+        if (announcements.isEmpty()) {
+            JLabel noAnnouncementLabel = new JLabel("No announcements available");
+            noAnnouncementLabel.setFont(UITheme.FONT_REGULAR);
+            noAnnouncementLabel.setForeground(new Color(200, 220, 240));
+            JPanel announcementCard = UITheme.createCardPanel();
+            announcementCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+            announcementCard.add(noAnnouncementLabel);
+            panel.add(announcementCard);
+        } else {
+            for (int i = 0; i < Math.min(2, announcements.size()); i++) {
+                AnnouncementManager.AnnouncementInfo announcement = announcements.get(i);
+                JPanel announcementCard = UITheme.createCardPanel();
+                announcementCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+                announcementCard.setLayout(new BoxLayout(announcementCard, BoxLayout.Y_AXIS));
+                
+                JLabel announcementTitleLabel = new JLabel(announcement.title);
+                announcementTitleLabel.setFont(UITheme.FONT_BOLD);
+                announcementTitleLabel.setForeground(UITheme.PRIMARY_BLUE);
+                
+                JLabel announcementMsgLabel = new JLabel(announcement.message.length() > 80 ? 
+                    announcement.message.substring(0, 80) + "..." : announcement.message);
+                announcementMsgLabel.setFont(UITheme.FONT_REGULAR);
+                announcementMsgLabel.setForeground(UITheme.TEXT_PRIMARY);
+                
+                announcementCard.add(announcementTitleLabel);
+                announcementCard.add(Box.createVerticalStrut(5));
+                announcementCard.add(announcementMsgLabel);
+                panel.add(announcementCard);
+                panel.add(Box.createVerticalStrut(10));
+            }
         }
 
         panel.add(Box.createVerticalGlue());
@@ -515,7 +547,7 @@ public class WorkerPanelModern extends JFrame {
     }
 
     /**
-     * Create bill payment panel
+     * Create bill payment panel - COMBINED Water & Electric Bills
      */
     private JScrollPane createBillPaymentPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
@@ -527,7 +559,7 @@ public class WorkerPanelModern extends JFrame {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
-        JLabel titleLabel = new JLabel("💳 Pay Bills");
+        JLabel titleLabel = new JLabel("💳 Bills Management");
         titleLabel.setFont(UITheme.FONT_TITLE);
         titleLabel.setForeground(UITheme.TEXT_PRIMARY);
         gbc.gridx = 0;
@@ -535,29 +567,56 @@ public class WorkerPanelModern extends JFrame {
         gbc.gridwidth = 2;
         panel.add(titleLabel, gbc);
 
-        // Select bill
+        // Water & Electric Combined Bill
         gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        panel.add(new JLabel("Select Bill:"), gbc);
-        String[] bills = {"Water Bill - PHP 850.00 (Due: May 10)", "Electric Bill - PHP 1,500.00 (Due: May 15)"};
-        JComboBox<String> billCombo = new JComboBox<>(bills);
-        gbc.gridx = 1;
-        gbc.gridwidth = 1;
-        panel.add(billCombo, gbc);
-
-        // Amount
-        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        panel.add(new JLabel("Water & Electric Bill"), gbc);
+        
+        JPanel billCard = UITheme.createCardPanel();
+        billCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        billCard.setLayout(new GridBagLayout());
+        GridBagConstraints billGbc = new GridBagConstraints();
+        billGbc.insets = new Insets(5, 5, 5, 5);
+        billGbc.fill = GridBagConstraints.HORIZONTAL;
+        billGbc.weightx = 1.0;
+        
+        JLabel waterLabel = new JLabel("💧 Water Bill: PHP 850.00 (Due: May 10)");
+        waterLabel.setFont(UITheme.FONT_REGULAR);
+        waterLabel.setForeground(UITheme.SUCCESS_GREEN);
+        billGbc.gridx = 0;
+        billGbc.gridy = 0;
+        billCard.add(waterLabel, billGbc);
+        
+        JLabel electricLabel = new JLabel("⚡ Electric Bill: PHP 1,500.00 (Due: May 15)");
+        electricLabel.setFont(UITheme.FONT_REGULAR);
+        electricLabel.setForeground(UITheme.ACCENT_ORANGE);
+        billGbc.gridy = 1;
+        billCard.add(electricLabel, billGbc);
+        
+        JLabel totalLabel = new JLabel("📊 Total: PHP 2,350.00");
+        totalLabel.setFont(UITheme.FONT_BOLD);
+        totalLabel.setForeground(UITheme.PRIMARY_BLUE);
+        billGbc.gridy = 2;
+        billCard.add(totalLabel, billGbc);
+        
         gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        panel.add(billCard, gbc);
+
+        // Amount to pay
+        gbc.gridy = 3;
         gbc.gridwidth = 1;
         panel.add(new JLabel("Amount to Pay (PHP):"), gbc);
         JTextField amountField = UITheme.createModernTextField(15);
-        amountField.setText("850.00");
+        amountField.setText("2350.00");
         gbc.gridx = 1;
+        gbc.gridwidth = 1;
         panel.add(amountField, gbc);
 
         // Payment method
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
+        gbc.gridwidth = 1;
         panel.add(new JLabel("Payment Method:"), gbc);
         String[] methods = {"Wallet Balance", "PayMaya", "GCash", "PayPal"};
         JComboBox<String> methodCombo = new JComboBox<>(methods);
@@ -566,26 +625,57 @@ public class WorkerPanelModern extends JFrame {
 
         // Confirm info
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.gridwidth = 2;
         JPanel infoPanel = UITheme.createCardPanel();
         infoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
-        JLabel infoLabel = new JLabel("<html>Balance After Payment: PHP 39,150.00<br/>Transaction will be processed immediately</html>");
+        JLabel infoLabel = new JLabel("<html>✓ Both water and electric bills can be paid together<br/>Balance After Payment: PHP 37,650.00<br/>Transaction will be processed immediately</html>");
         infoLabel.setFont(UITheme.FONT_REGULAR);
         infoLabel.setForeground(UITheme.TEXT_SECONDARY);
         infoPanel.add(infoLabel);
         panel.add(infoPanel, gbc);
 
         // Pay button
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.gridwidth = 2;
-        JButton payBtn = UITheme.createModernButton("💳 Pay Now", UITheme.SUCCESS_GREEN);
+        JButton payBtn = UITheme.createModernButton("💳 Pay Both Bills Now", UITheme.SUCCESS_GREEN);
         payBtn.setPreferredSize(new Dimension(Integer.MAX_VALUE, 45));
         payBtn.addActionListener(e -> {
-            String bill = (String) billCombo.getSelectedItem();
-            JOptionPane.showMessageDialog(panel, "✓ Bill payment successful!\n\nBill: " + bill + "\nTransaction ID: TXN" + System.currentTimeMillis());
+            String amount = amountField.getText();
+            String method = (String) methodCombo.getSelectedItem();
+            JOptionPane.showMessageDialog(panel, 
+                "✓ Bills payment successful!\n\n" +
+                "Water & Electric Bills: PHP " + amount + "\n" +
+                "Payment Method: " + method + "\n" +
+                "Transaction ID: TXN" + System.currentTimeMillis(),
+                "Payment Confirmed",
+                JOptionPane.INFORMATION_MESSAGE);
         });
         panel.add(payBtn, gbc);
+
+        // Payment history
+        gbc.gridy = 7;
+        gbc.gridwidth = 2;
+        JLabel historyLabel = new JLabel("Payment History");
+        historyLabel.setFont(UITheme.FONT_SUBHEADING);
+        panel.add(historyLabel, gbc);
+
+        String[] columns = {"Date", "Type", "Amount", "Status"};
+        Object[][] data = {
+            {"2024-04-01", "Water & Electric", "-2,350.00", "Paid"},
+            {"2024-03-01", "Water & Electric", "-2,300.00", "Paid"},
+            {"2024-02-01", "Water & Electric", "-2,250.00", "Paid"}
+        };
+
+        JTable historyTable = new JTable(data, columns);
+        historyTable.setFont(UITheme.FONT_REGULAR);
+        historyTable.setRowHeight(25);
+        historyTable.setBackground(UITheme.BG_WHITE);
+        
+        gbc.gridy = 8;
+        JScrollPane scrollPane = new JScrollPane(historyTable);
+        scrollPane.setPreferredSize(new Dimension(Integer.MAX_VALUE, 150));
+        panel.add(scrollPane, gbc);
 
         panel.add(Box.createVerticalGlue());
         return new JScrollPane(panel);
@@ -711,6 +801,9 @@ public class WorkerPanelModern extends JFrame {
         gbc.gridwidth = 2;
         panel.add(titleLabel, gbc);
 
+        // Get profile info
+        ProfileManager.ProfileInfo profileInfo = ProfileManager.getProfile(workerUser.id);
+
         // Name fields
         gbc.gridy = 1;
         gbc.gridwidth = 1;
@@ -730,9 +823,32 @@ public class WorkerPanelModern extends JFrame {
         gbc.gridx = 1;
         panel.add(lastNameField, gbc);
 
-        // Email
+        // Nickname/Display name (customizable)
         gbc.gridx = 0;
         gbc.gridy = 3;
+        panel.add(new JLabel("Display Name (Nickname):"), gbc);
+        JTextField nicknameField = UITheme.createModernTextField(20);
+        nicknameField.setText(profileInfo != null && profileInfo.nickname != null ? profileInfo.nickname : workerUser.getFullName());
+        gbc.gridx = 1;
+        panel.add(nicknameField, gbc);
+
+        // Bio
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        panel.add(new JLabel("Bio:"), gbc);
+        JTextArea bioArea = new JTextArea(3, 20);
+        bioArea.setFont(UITheme.FONT_REGULAR);
+        bioArea.setLineWrap(true);
+        bioArea.setWrapStyleWord(true);
+        bioArea.setText(profileInfo != null && profileInfo.bio != null ? profileInfo.bio : "");
+        bioArea.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_GRAY, 1));
+        JScrollPane bioScroll = new JScrollPane(bioArea);
+        gbc.gridx = 1;
+        panel.add(bioScroll, gbc);
+
+        // Email
+        gbc.gridx = 0;
+        gbc.gridy = 5;
         panel.add(new JLabel("Email:"), gbc);
         JTextField emailField = UITheme.createModernTextField(20);
         emailField.setText(workerUser.email);
@@ -741,7 +857,7 @@ public class WorkerPanelModern extends JFrame {
 
         // Phone number for notifications
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 6;
         panel.add(new JLabel("📱 Phone Number (for notifications):"), gbc);
         JTextField phoneField = UITheme.createModernTextField(20);
         phoneField.setText(workerUser.phoneNumber != null ? workerUser.phoneNumber : "");
@@ -750,7 +866,7 @@ public class WorkerPanelModern extends JFrame {
 
         // Employee info
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 7;
         panel.add(new JLabel("Position:"), gbc);
         JTextField positionField = UITheme.createModernTextField(20);
         positionField.setText(employeeInfo != null ? employeeInfo.position : "");
@@ -759,7 +875,7 @@ public class WorkerPanelModern extends JFrame {
         panel.add(positionField, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 6;
+        gbc.gridy = 8;
         panel.add(new JLabel("Department:"), gbc);
         JTextField deptField = UITheme.createModernTextField(20);
         deptField.setText(employeeInfo != null ? employeeInfo.department : "");
@@ -769,37 +885,104 @@ public class WorkerPanelModern extends JFrame {
 
         // Notification preferences
         gbc.gridx = 0;
-        gbc.gridy = 7;
+        gbc.gridy = 9;
         gbc.gridwidth = 2;
         panel.add(new JSeparator(), gbc);
 
         JLabel notifLabel = new JLabel("🔔 Notification Preferences");
         notifLabel.setFont(UITheme.FONT_SUBHEADING);
-        gbc.gridy = 8;
+        gbc.gridy = 10;
         panel.add(notifLabel, gbc);
 
-        gbc.gridy = 9;
+        gbc.gridy = 11;
         JCheckBox salaryNotif = new JCheckBox("Notify when salary is released", true);
         panel.add(salaryNotif, gbc);
 
-        gbc.gridy = 10;
+        gbc.gridy = 12;
         JCheckBox billNotif = new JCheckBox("Notify about due bills", true);
         panel.add(billNotif, gbc);
 
-        gbc.gridy = 11;
+        gbc.gridy = 13;
         JCheckBox msgNotif = new JCheckBox("Notify when I receive messages", true);
         panel.add(msgNotif, gbc);
 
         // Save button
-        gbc.gridy = 12;
+        gbc.gridy = 14;
         gbc.gridwidth = 2;
         JButton saveBtn = UITheme.createModernButton("💾 Save Changes", UITheme.SUCCESS_GREEN);
         saveBtn.setPreferredSize(new Dimension(Integer.MAX_VALUE, 40));
         saveBtn.addActionListener(e -> {
             updateUserPhone(phoneField.getText());
-            JOptionPane.showMessageDialog(panel, "✓ Profile updated successfully!");
+            ProfileManager.updateNickname(workerUser.id, nicknameField.getText());
+            ProfileManager.updateBio(workerUser.id, bioArea.getText());
+            JOptionPane.showMessageDialog(panel, 
+                "✓ Profile updated successfully!\n\n" +
+                "Your display name is now: " + nicknameField.getText() + "\n" +
+                "(Your actual name in the system remains unchanged)",
+                "Profile Updated",
+                JOptionPane.INFORMATION_MESSAGE);
         });
         panel.add(saveBtn, gbc);
+
+        panel.add(Box.createVerticalGlue());
+        return new JScrollPane(panel);
+    }
+
+    /**
+     * Create announcements panel
+     */
+    private JScrollPane createAnnouncementsPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(UITheme.BG_LIGHT);
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel titleLabel = new JLabel("📢 Announcements");
+        titleLabel.setFont(UITheme.FONT_TITLE);
+        titleLabel.setForeground(UITheme.TEXT_PRIMARY);
+        panel.add(titleLabel);
+        panel.add(Box.createVerticalStrut(15));
+
+        List<AnnouncementManager.AnnouncementInfo> announcements = AnnouncementManager.getAllAnnouncements();
+        
+        if (announcements.isEmpty()) {
+            JLabel noAnnouncementLabel = new JLabel("No announcements from management at this time");
+            noAnnouncementLabel.setFont(UITheme.FONT_REGULAR);
+            noAnnouncementLabel.setForeground(UITheme.TEXT_SECONDARY);
+            JPanel emptyCard = UITheme.createCardPanel();
+            emptyCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+            emptyCard.add(noAnnouncementLabel);
+            panel.add(emptyCard);
+        } else {
+            for (AnnouncementManager.AnnouncementInfo announcement : announcements) {
+                JPanel announcementCard = UITheme.createCardPanel();
+                announcementCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
+                announcementCard.setLayout(new BoxLayout(announcementCard, BoxLayout.Y_AXIS));
+                
+                JLabel announcementTitleLabel = new JLabel(announcement.title);
+                announcementTitleLabel.setFont(UITheme.FONT_BOLD);
+                announcementTitleLabel.setForeground(UITheme.PRIMARY_BLUE);
+                announcementTitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                
+                JLabel announcementMsgLabel = new JLabel(announcement.message);
+                announcementMsgLabel.setFont(UITheme.FONT_REGULAR);
+                announcementMsgLabel.setForeground(UITheme.TEXT_PRIMARY);
+                announcementMsgLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                
+                JLabel announcementByLabel = new JLabel("From: " + announcement.announcedBy + " • " + announcement.createdAt);
+                announcementByLabel.setFont(UITheme.FONT_SMALL);
+                announcementByLabel.setForeground(UITheme.TEXT_SECONDARY);
+                announcementByLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                
+                announcementCard.add(announcementTitleLabel);
+                announcementCard.add(Box.createVerticalStrut(8));
+                announcementCard.add(announcementMsgLabel);
+                announcementCard.add(Box.createVerticalStrut(5));
+                announcementCard.add(announcementByLabel);
+                panel.add(announcementCard);
+                panel.add(Box.createVerticalStrut(15));
+            }
+        }
 
         panel.add(Box.createVerticalGlue());
         return new JScrollPane(panel);

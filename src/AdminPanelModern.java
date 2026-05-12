@@ -6,6 +6,7 @@ import java.awt.event.*;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 
 /**
  * AdminPanelModern.java
@@ -23,7 +24,7 @@ public class AdminPanelModern extends JFrame {
         this.adminUser = adminUser;
 
         // Frame setup
-        setTitle("Payroll System - Admin Panel");
+        setTitle("Mihoyo - Admin Panel");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 750);
         setLocationRelativeTo(null);
@@ -45,9 +46,10 @@ public class AdminPanelModern extends JFrame {
         tabbedPane.addTab("📊 Dashboard", createDashboardPanel());
         tabbedPane.addTab("👥 Manage Employees", createEmployeeManagementPanel());
         tabbedPane.addTab("💰 Salary Management", createSalaryManagementPanel());
-        tabbedPane.addTab("📬 Messages (" + messageCount + ")", createMessagesPanel());
+        tabbedPane.addTab("� Messages", createMessagesPanel());
+        tabbedPane.addTab("📢 Announcements", createAnnouncementsPanel());
         tabbedPane.addTab("📱 E-Wallet Integration", createEWalletPanel());
-        tabbedPane.addTab("📄 Bill Management", createBillManagementPanel());
+        tabbedPane.addTab("💳 Bills", createBillManagementPanel());
         tabbedPane.addTab("✓ Attendance", createAttendancePanel());
         
         // Update message count
@@ -526,6 +528,126 @@ public class AdminPanelModern extends JFrame {
     }
 
     /**
+     * Create announcements panel
+     */
+    private JPanel createAnnouncementsPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(UITheme.BG_LIGHT);
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Create announcement
+        JPanel createPanel = new JPanel();
+        createPanel.setOpaque(false);
+        
+        JLabel titleLabel = new JLabel("Post New Announcement");
+        titleLabel.setFont(UITheme.FONT_SUBHEADING);
+        titleLabel.setForeground(UITheme.TEXT_PRIMARY);
+        
+        JTextField titleField = UITheme.createModernTextField(30);
+        titleField.setToolTipText("Announcement title");
+        
+        JTextArea messageArea = new JTextArea(6, 40);
+        messageArea.setFont(UITheme.FONT_REGULAR);
+        messageArea.setLineWrap(true);
+        messageArea.setWrapStyleWord(true);
+        messageArea.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_GRAY, 2));
+        JScrollPane scrollPane = new JScrollPane(messageArea);
+        
+        JButton postBtn = UITheme.createModernButton("📢 Post Announcement", UITheme.SUCCESS_GREEN);
+        postBtn.addActionListener(e -> {
+            String title = titleField.getText().trim();
+            String message = messageArea.getText().trim();
+            if (title.isEmpty() || message.isEmpty()) {
+                JOptionPane.showMessageDialog(panel, "Please fill in both title and message", "Error", JOptionPane.WARNING_MESSAGE);
+            } else {
+                if (AnnouncementManager.postAnnouncement(adminUser.id, title, message)) {
+                    JOptionPane.showMessageDialog(panel, "✓ Announcement posted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    titleField.setText("");
+                    messageArea.setText("");
+                } else {
+                    JOptionPane.showMessageDialog(panel, "❌ Failed to post announcement", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        
+        gbc.gridy = 0;
+        formPanel.add(titleLabel, gbc);
+        gbc.gridy = 1;
+        formPanel.add(titleField, gbc);
+        gbc.gridy = 2;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        formPanel.add(scrollPane, gbc);
+        gbc.gridy = 3;
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        formPanel.add(postBtn, gbc);
+        
+        // Announcements list
+        JLabel listLabel = new JLabel("Recent Announcements");
+        listLabel.setFont(UITheme.FONT_SUBHEADING);
+        listLabel.setForeground(UITheme.TEXT_PRIMARY);
+        
+        JPanel listPanel = new JPanel();
+        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+        listPanel.setBackground(UITheme.BG_LIGHT);
+        
+        List<AnnouncementManager.AnnouncementInfo> announcements = AnnouncementManager.getAllAnnouncements();
+        if (announcements.isEmpty()) {
+            JLabel noAnnouncementLabel = new JLabel("No announcements yet");
+            noAnnouncementLabel.setFont(UITheme.FONT_REGULAR);
+            noAnnouncementLabel.setForeground(UITheme.TEXT_SECONDARY);
+            listPanel.add(noAnnouncementLabel);
+        } else {
+            for (AnnouncementManager.AnnouncementInfo announcement : announcements) {
+                JPanel announcementCard = UITheme.createCardPanel();
+                announcementCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+                announcementCard.setLayout(new BoxLayout(announcementCard, BoxLayout.Y_AXIS));
+                
+                JLabel announcementTitleLabel = new JLabel(announcement.title);
+                announcementTitleLabel.setFont(UITheme.FONT_BOLD);
+                announcementTitleLabel.setForeground(UITheme.PRIMARY_BLUE);
+                
+                JLabel announcementMsgLabel = new JLabel(announcement.message.length() > 100 ? 
+                    announcement.message.substring(0, 100) + "..." : announcement.message);
+                announcementMsgLabel.setFont(UITheme.FONT_REGULAR);
+                announcementMsgLabel.setForeground(UITheme.TEXT_PRIMARY);
+                
+                JLabel announcementByLabel = new JLabel("By: " + announcement.announcedBy + " • " + announcement.createdAt);
+                announcementByLabel.setFont(UITheme.FONT_SMALL);
+                announcementByLabel.setForeground(UITheme.TEXT_SECONDARY);
+                
+                announcementCard.add(announcementTitleLabel);
+                announcementCard.add(Box.createVerticalStrut(5));
+                announcementCard.add(announcementMsgLabel);
+                announcementCard.add(Box.createVerticalStrut(5));
+                announcementCard.add(announcementByLabel);
+                listPanel.add(announcementCard);
+                listPanel.add(Box.createVerticalStrut(10));
+            }
+        }
+        
+        listPanel.add(Box.createVerticalGlue());
+        
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setBackground(UITheme.BG_LIGHT);
+        centerPanel.add(listLabel, BorderLayout.NORTH);
+        centerPanel.add(new JScrollPane(listPanel), BorderLayout.CENTER);
+        
+        panel.add(formPanel, BorderLayout.NORTH);
+        panel.add(centerPanel, BorderLayout.CENTER);
+        
+        return panel;
+    }
+
+    /**
      * Create bill management panel
      */
     private JPanel createBillManagementPanel() {
@@ -537,16 +659,16 @@ public class AdminPanelModern extends JFrame {
         JPanel filterPanel = new JPanel();
         filterPanel.setOpaque(false);
         JLabel filterLabel = new JLabel("Bill Type:");
-        JComboBox<String> typeCombo = new JComboBox<>(new String[]{"All", "Water", "Electric", "Other"});
+        JComboBox<String> typeCombo = new JComboBox<>(new String[]{"All", "Water", "Electric", "Water & Electric", "Other"});
         filterPanel.add(filterLabel);
         filterPanel.add(typeCombo);
 
         // Bills table
         String[] columns = {"Employee", "Bill Type", "Amount", "Due Date", "Status", "Action"};
         Object[][] data = {
-            {"John Doe", "Electric", "1,500.00", "2024-05-10", "Pending", "Process"},
-            {"Jane Smith", "Water", "850.00", "2024-05-15", "Paid", "View"},
-            {"Maria Santos", "Electric", "1,200.00", "2024-05-10", "Overdue", "Collect"}
+            {"John Doe", "Water & Electric", "2,350.00", "2024-05-10", "Pending", "Process"},
+            {"Jane Smith", "Water & Electric", "2,050.00", "2024-05-15", "Paid", "View"},
+            {"Maria Santos", "Water & Electric", "2,200.00", "2024-05-10", "Overdue", "Collect"}
         };
 
         JTable billsTable = new JTable(data, columns);

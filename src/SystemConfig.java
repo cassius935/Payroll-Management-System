@@ -22,8 +22,8 @@ public class SystemConfig {
     public static final String DB_DRIVER = "com.mysql.cj.jdbc.Driver";
     
     // Application settings
-    public static final String APP_NAME = "Payroll Management System";
-    public static final String APP_VERSION = "2.0.0";
+    public static final String APP_NAME = "Mihoyo";
+    public static final String APP_VERSION = "3.0.0";
     public static final String APP_BUILD = "2024-05-12";
     public static final boolean DEMO_MODE_ENABLED = true;
     

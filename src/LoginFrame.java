@@ -22,7 +22,7 @@ public class LoginFrame extends JFrame {
 
     public LoginFrame() {
         // Frame setup
-        setTitle("Payroll Management System - Login");
+        setTitle("Mihoyo - Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(450, 650);
         setLocationRelativeTo(null);
@@ -57,12 +57,12 @@ public class LoginFrame extends JFrame {
         topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
         topPanel.setBorder(BorderFactory.createEmptyBorder(40, 20, 30, 20));
 
-        logoLabel = new JLabel("💼 PAYROLL");
+        logoLabel = new JLabel("💼 MIHOYO");
         logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         logoLabel.setForeground(Color.WHITE);
         logoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel subtitleLabel = new JLabel("Management System");
+        JLabel subtitleLabel = new JLabel("Payroll Management System");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(200, 220, 240));
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
