@@ -1,0 +1,248 @@
+# Quick Reference Card
+
+## 🚀 Get Started in 3 Minutes
+
+### Step 1: Setup Database
+```bash
+mysql -u root
+USE payrollmanagement;
+SOURCE database_setup.sql;
+```
+
+### Step 2: Compile
+```bash
+cd c:\Users\user\OneDrive\Desktop\Payroll Management System
+javac -cp "lib/mysql-connector-j-9.6.0.jar" main.java src/*.java
+```
+
+### Step 3: Run
+```bash
+java -cp ".;lib/mysql-connector-j-9.6.0.jar" main
+```
+```
+
+---
+
+## 🔐 Admin Credentials
+
+| Account | Username | Password      |
+|---------|----------|---------------|
+| Admin1  | admin1   | 12345678910   |
+| Admin2  | admin2   | 10987654321   |
+| Worker  | worker1  | worker123     |
+
+---
+
+## 📂 Project Files
+
+```
+Payroll Management System/
+├── main.java ........................ Entry point
+├── database_setup.sql ............... Run this first in MySQL
+├── ADMIN_SETUP.md ................... Detailed setup guide
+├── DATABASE_INTEGRATION_COMPLETE.md . What was done
+├── CHANGELOG.md ..................... All changes made
+├── README.md ........................ Full documentation
+├── DATABASE_INTEGRATION_GUIDE.md ... More integration points
+├── PROJECT_SUMMARY.md .............. Project overview
+└── src/
+    ├── PayrollApp.java ............. Application launcher
+    ├── LoginFrame.java ............. Login GUI (✅ DB connected)
+    ├── AdminPanel.java ............. Admin dashboard (✅ DB connected)
+    ├── WorkerPanel.java ............ Worker view
+    ├── DBConnection.java ........... Database handler
+    ├── EmployeeManager.java ........ ID generation (✅ DB connected)
+    └── SalaryCalculator.java ....... Salary math
+```
+
+---
+
+## ✅ What's Connected to Database
+
+- [x] Admin Login (users table)
+- [x] Employee Registration (employees table)
+- [x] Employee ID Generation (prevents duplicates)
+- [x] View Employees (employees table)
+- [ ] Worker Login (ready to connect)
+- [ ] Worker Payment History (ready to connect)
+- [ ] Worker Profile (ready to connect)
+
+---
+
+## 🔧 Common Commands
+
+### Check if admin accounts exist:
+```sql
+SELECT * FROM admin;
+```
+
+### Check if worker accounts exist:
+```sql
+SELECT * FROM useracc;
+```
+
+### See all employees:
+```sql
+SELECT * FROM payroll;
+```
+
+### Delete all employees (to start fresh):
+```sql
+DELETE FROM employees;
+```
+
+### Drop and recreate database:
+```sql
+DROP DATABASE payrollmanagement;
+CREATE DATABASE payrollmanagement;
+SOURCE database_setup.sql;
+```
+
+---
+
+## 🐛 Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| "Connection refused" | Start MySQL |
+| "Table doesn't exist" | Run database_setup.sql |
+| "Invalid credentials" | Check admin1/admin2 passwords |
+| "Duplicate ID error" | Restart application |
+| "No employees shown" | Register your first employee |
+
+---
+
+## 📝 Admin Tasks
+
+1. **Login**: admin1 / 12345678910
+2. **Generate ID**: Click "Generate ID" button (auto EMP123456)
+3. **Register Employee**: Fill form, click Register
+4. **View Employees**: See all in database
+5. **Calculate Pay**: In Manage Payroll tab
+6. **Logout**: File → Logout
+
+---
+
+## 🔄 Data Flow
+
+```
+User Types: admin1, admin2
+        ↓
+LoginFrame queries users table
+        ↓
+Authentication success
+        ↓
+AdminPanel opens
+        ↓
+Register employee
+        ↓
+EmployeeManager generates unique ID
+        ↓
+Save to employees table
+        ↓
+View Employees shows from database
+```
+
+---
+
+## 💾 Important Files to Run
+
+1. **First Time Only:**
+   ```bash
+   mysql -u root < database_setup.sql
+   ```
+
+2. **Every Time:**
+   ```bash
+   javac main.java src/*.java
+   java main
+   ```
+
+---
+
+## 📊 Database Connection Details
+
+- **Type**: MySQL
+- **Host**: localhost:3306
+- **Database**: payrollmanagement
+- **User**: root
+- **Password**: (empty)
+- **Location**: src/DBConnection.java
+
+---
+
+## ✨ Features
+
+✅ Admin login with DB authentication  
+✅ Unique employee ID generation (prevents duplicates)  
+✅ Employee registration saves to DB  
+✅ View all employees from DB  
+✅ Salary calculations with deductions  
+✅ Modular, well-commented code  
+✅ Ready for worker features connection  
+
+---
+
+## 🎯 Next After Setup
+
+1. Test admin login (admin1/12345678910)
+2. Register 2-3 test employees
+3. Verify they appear in Employee Directory
+4. Generate multiple employees, verify unique IDs
+5. Calculate payroll to see salary breakdown
+6. Check employees are in MySQL database
+
+---
+
+## 📖 Documentation
+
+- **Setup Instructions**: ADMIN_SETUP.md
+- **All Changes**: CHANGELOG.md
+- **Full Documentation**: README.md
+- **Integration Guide**: DATABASE_INTEGRATION_GUIDE.md
+- **Project Overview**: PROJECT_SUMMARY.md
+- **Status**: DATABASE_INTEGRATION_COMPLETE.md
+
+---
+
+## 🎓 Learning Resources
+
+- **How IDs work**: EmployeeManager.java (lines 1-60)
+- **How login works**: LoginFrame.java (lines ~130-160)
+- **How registration works**: AdminPanel.java (lines ~140-200)
+- **How pay is calculated**: SalaryCalculator.java
+- **How DB connects**: DBConnection.java
+
+---
+
+## ⚡ Quick Tests
+
+### Test Login Works:
+1. Type: admin1
+2. Password: 12345678910
+3. Role: Administrator
+4. Should see AdminPanel
+
+### Test Worker Login:
+1. Type: `worker1`
+2. Password: `worker123`
+3. Role: `Worker`
+4. Should see WorkerPanel
+
+### Test Employee Registration:
+1. Register Employee tab
+2. Click "Generate ID"
+3. Fill: John Doe, john@company.com, Sales, Associate, 25.00
+4. Click "Register Employee"
+5. Should see success message with Employee ID
+
+### Test Employee Appears in DB:
+1. View Employees tab
+2. Should see John Doe listed
+3. Check MySQL: `SELECT * FROM payroll;`
+
+---
+
+**Created:** April 2026  
+**Status:** ✅ Ready to Use  
+**Last Updated:** Today

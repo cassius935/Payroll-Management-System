@@ -1,0 +1,11 @@
+Executed SQL Statement : Create table ` bscs1b`.`ID`(  
+  `id` int(6) NOT NULL,
+  `tuser` varchar(30),
+  `topen` text,
+  `utype` varchar(15),
+  `dreg` date DEFAULT 'CURRENT_TIME',
+  `trdate` timestamp,
+  primary key (`id`)
+) 
+Error Number : 1067 
+Error Message: Invalid default value for 'dreg' 
